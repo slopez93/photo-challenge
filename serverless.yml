@@ -1,0 +1,93 @@
+service: photobox-challenge-api
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  region: eu-west-1
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource:
+        - Fn::GetAtt: [PhotoboxTable, Arn]
+
+plugins:
+  - serverless-dynamodb-local
+  - serverless-offline
+
+custom:
+  constants:
+    PHOTOBOX_TABLE: photobox-table
+  dynamodb:
+    start:
+      port: "8000"
+      host: dynamodb-local
+      docker: true
+      noStart: true
+      migrate: true
+    stages:
+      - dev
+      - prod
+
+package:
+  exclude:
+    - .git/**
+    - src/**
+    - test/**
+    - e2e/**
+    - nodemon.json
+    - README.md
+
+functions:
+  index:
+    handler: dist/src/apps/api/serverlessApp.handler
+    environment:
+      PHOTOBOX_TABLE: ${self:custom.constants.PHOTOBOX_TABLE}
+    events:
+    - http:
+        cors: true
+        path: '/'
+        method: any
+    - http:
+        cors: true
+        path: '{proxy+}'
+        method: any
+
+resources:
+  Resources:
+    PhotoboxTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:custom.constants.PHOTOBOX_TABLE}
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          # - AttributeName: GS1PK
+          #   AttributeType: S
+          # - AttributeName: GS1SK
+          #   AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        # GlobalSecondaryIndexes:
+        #   - IndexName: GS1
+        #     KeySchema:
+        #       - AttributeName: GS1PK
+        #         KeyType: HASH
+        #       - AttributeName: GS1SK
+        #         KeyType: RANGE
+        #     Projection:
+        #       ProjectionType: 'ALL'
+        BillingMode: PAY_PER_REQUEST
+        SSESpecification:
+          SSEEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
