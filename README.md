@@ -83,6 +83,7 @@ Request example:
 
 ## 📚 Consierations
 
+- Sorry for include all in a single commit, I have been working in other repo
 - I have used **docker compose** for container api withdatabase
 - I have user **Serverless** with **Express**
 - I have used **Dynamodb** as DB
